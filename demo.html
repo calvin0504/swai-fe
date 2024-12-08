@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Demo Page</title>
+    <link rel="stylesheet" href="assets/css/main.css">
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+<body>
+<header id="header">
+    <h1 id="logo">SWAI - Demo</h1>
+    <nav id="nav">
+        <ul>
+            <li><a href="/">Home</a></li>
+        </ul>
+    </nav>
+</header>
+
+<section id="demo">
+    <div class="container" style="padding-top: 100px;">
+
+
+        <!-- 뉴스 검색 섹션 -->
+        <div id="news-section">
+            <h3>실시간 뉴스 검색하기</h3>
+            <form id="news-form">
+                <select id="country" required>
+                    <option value="us" selected>미국</option>
+                    <option value="kr">한국</option>
+                    <option value="jp">일본</option>
+                </select>
+                <select id="category" required>
+                    <option value="general" selected>전체</option>
+                    <option value="technology">기술</option>
+                    <option value="business">경제</option>
+                </select>
+                <button type="submit">검색하기</button>
+            </form>
+            <ul id="news-list"></ul>
+        </div>
+
+        <!-- 주식 추천 섹션 -->
+        <div id="stock-section">
+            <h3>연관된 주식 종목</h3>
+            <div id="stock-recommendations">
+                <p>위에 검색된 뉴스의 헤드라인을 클릭하여 연관된 주식 종목을 살펴보세요!</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script>
+    const newsForm = document.getElementById('news-form');
+    const newsList = document.getElementById('news-list');
+    const stockRecommendations = document.getElementById('stock-recommendations');
+
+    // 페이지 로드 시 가져오기
+    window.addEventListener('load', async () => {
+        const defaultCountry = 'us';
+        const defaultCategory = 'general';
+        await fetchNews(defaultCountry, defaultCategory);
+    });
+
+    // 뉴스 검색
+    newsForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const country = document.getElementById('country').value;
+        const category = document.getElementById('category').value;
+        await fetchNews(country, category);
+    });
+
+    // 뉴스 가져오기
+    async function fetchNews(country, category) {
+        try {
+            const response = await axios.get(`https://fc9e-121-141-17-183.ngrok-free.app/api/news?country=${country}&category=${category}`
+            ,{headers : {'ngrok-skip-browser-warning': '69420'}});
+            const data = response.data;
+
+            newsList.innerHTML = '';
+            if (data.articles) {
+                data.articles.forEach(article => {
+                    const li = document.createElement('li');
+                    li.textContent = article.title;
+                    li.style.cursor = 'pointer'; // 클릭 가능한 스타일
+                    li.addEventListener('click', () => fetchStockRecommendations(article.title)); // 클릭 이벤트
+                    newsList.appendChild(li);
+                });
+            } else {
+                newsList.innerHTML = '<li>죄송합니다. 지금은 해당 뉴스를 제공할 수 없습니다.</li>';
+            }
+        } catch (error) {
+            console.error('Error fetching news:', error);
+            newsList.innerHTML = '<li>Error</li>';
+        }
+    }
+
+    // 주식 추천
+    async function fetchStockRecommendations(newsTitle) {
+        try {
+            stockRecommendations.innerHTML = `<p>불러오는 중 : <strong>${newsTitle}</strong></p>`;
+            const response = await axios.post('https://fc9e-121-141-17-183.ngrok-free.app/api/recommend_stocks', {
+                news_title: newsTitle
+            }, {headers: {'ngrok-skip-browser-warning': '69420'}});
+
+            const data = response.data;
+            stockRecommendations.innerHTML = `<p>${data.recommended_stocks || '죄송합니다. 다른 걸 선택해주세요.'}</p>`;
+        } catch (error) {
+            console.error('Error :', error);
+            stockRecommendations.innerHTML = '<p>Error</p>';
+        }
+    }
+</script>
+</body>
+</html>
